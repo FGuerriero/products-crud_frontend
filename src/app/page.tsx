@@ -1,113 +1,167 @@
-import Image from "next/image";
+"use client";
+import { useEffect, useState } from "react";
+
+interface IProduct {
+  id?: number;
+  name: string;
+  description: string;
+  price: number;
+}
+
+class Product implements IProduct {
+  name = "";
+  description = "";
+  price = 0;
+}
 
 export default function Home() {
-  return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">src/app/page.tsx</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:size-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
-        </div>
-      </div>
+  const [formProduct, setFormProduct] = useState<IProduct>(new Product());
+  const [products, setProducts] = useState<IProduct[]>([]);
 
-      <div className="relative z-[-1] flex place-items-center before:absolute before:h-[300px] before:w-full before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-full after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 sm:before:w-[480px] sm:after:w-[240px] before:lg:h-[360px]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
+  useEffect(() => getProducts(), []);
+
+  const createProduct = () => {
+    fetch(`${process.env.NEXT_PUBLIC_PRODUCTS_URL}/products`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(formProduct),
+    })
+      .then(() => setFormProduct(new Product()))
+      .then(getProducts);
+  };
+
+  const getProducts = () => {
+    fetch(`${process.env.NEXT_PUBLIC_PRODUCTS_URL}/products`)
+      .then((res) => res.json())
+      .then((products: IProduct[]) =>
+        products.toSorted((a: any, b: any) => a.id - b.id)
+      )
+      .then(setProducts);
+  };
+
+  const updateProduct = () =>
+    fetch(
+      `${process.env.NEXT_PUBLIC_PRODUCTS_URL}/products/${formProduct.id}`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formProduct),
+      }
+    )
+      .then(() => setFormProduct(new Product()))
+      .then(getProducts);
+
+  const deleteProduct = (id: number | undefined) =>
+    fetch(`${process.env.NEXT_PUBLIC_PRODUCTS_URL}/products/${id}`, {
+      method: "DELETE",
+    }).then(getProducts);
+
+  const renderProducts = () => (
+    <div className="flex flex-col gap-2 overflow-y-auto px-5 scrollbar">
+      {products.map((product) => (
+        <div
+          key={product.id}
+          className="flex items-center gap-4 bg-zinc-800 p-2 rounded-md"
+        >
+          <div>{product.id}</div>
+          <div className="flex-1">{product.name}</div>
+          <div>$ {product.price.toFixed(2)}</div>
+          <div className="flex gap-2">
+            <button
+              onClick={async () => setFormProduct({ ...product })}
+              className="bg-green-500 p-2 rounded-md"
+            >
+              Update
+            </button>
+            <button
+              onClick={() => deleteProduct(product.id)}
+              className="bg-red-500 p-2 rounded-md"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+
+  const renderForm = () => (
+    <div className="flex gap-5 items-end mt-5">
+      {formProduct.id && (
+        <div className="flex flex-col">
+          <label htmlFor="id">Product ID</label>
+          <input
+            id="id"
+            type="button"
+            disabled
+            value={formProduct.id}
+            className="py-2"
+          />
+        </div>
+      )}
+      <div className="flex flex-col">
+        <label htmlFor="name">Name</label>
+        <input
+          id="name"
+          type="text"
+          value={formProduct.name}
+          onChange={(e) =>
+            setFormProduct({ ...formProduct, name: e.target.value })
+          }
+          className="bg-zinc-700 p-2 rounded-md"
         />
       </div>
-
-      <div className="mb-32 grid text-center lg:mb-0 lg:w-full lg:max-w-5xl lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Docs{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Learn{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Templates{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Explore starter templates for Next.js.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Deploy{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-balance text-sm opacity-50">
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
+      <div className="flex flex-col">
+        <label htmlFor="description">Description</label>
+        <input
+          id="description"
+          type="text"
+          value={formProduct.description}
+          onChange={(e) =>
+            setFormProduct({ ...formProduct, description: e.target.value })
+          }
+          className="bg-zinc-700 p-2 rounded-md"
+        />
       </div>
-    </main>
+      <div className="flex flex-col">
+        <label htmlFor="price">Price</label>
+        <input
+          id="price"
+          type="number"
+          value={formProduct.price}
+          onChange={(e) =>
+            setFormProduct({ ...formProduct, price: +e.target.value })
+          }
+          className="bg-zinc-700 p-2 rounded-md"
+        />
+      </div>
+      <div className="flex gap-2">
+        <button
+          onClick={formProduct.id ? updateProduct : createProduct}
+          className="bg-blue-500 px-4 py-2 rounded-md "
+        >
+          {formProduct.id ? "Save" : "Create New Product"}
+        </button>
+        {formProduct.id && (
+          <button
+            onClick={() => setFormProduct(new Product())}
+            className="bg-red-500 p-2 rounded-md"
+          >
+            Cancel
+          </button>
+        )}
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="flex flex-col justify-center items-center h-screen gap-10">
+      {renderForm()}
+      {renderProducts()}
+    </div>
   );
 }
